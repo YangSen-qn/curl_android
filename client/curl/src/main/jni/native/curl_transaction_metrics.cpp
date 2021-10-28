@@ -92,6 +92,34 @@ void setJavaMetricsLongField(CurlContext *curlContext, const char *fieldName, lo
     env->DeleteLocalRef(metrics_class);
 }
 
+void setJavaMetricsVoidField(CurlContext *curlContext, const char *fieldName){
+    if (curlContext == NULL) {
+        return;
+    }
+
+    JNIEnv *env = curlContext->env;
+    jobject metrics = curlContext->metrics;
+    if (env == NULL || metrics == NULL) {
+        return;
+    }
+
+    jclass metrics_class = env->FindClass("com/qiniu/client/curl/CurlTransactionMetrics");
+    if (metrics_class == NULL) {
+        return;
+    }
+
+    jmethodID set_method = env->GetMethodID(metrics_class, fieldName, "()V");
+
+    if (set_method == NULL) {
+        env->DeleteLocalRef(metrics_class);
+        return;
+    }
+
+    env->CallVoidMethod(metrics, set_method);
+
+    env->DeleteLocalRef(metrics_class);
+}
+
 void setJavaMetricsCountOfRequestHeaderBytesSent(CurlContext *curlContext, long long fieldValue){
     setJavaMetricsLongField(curlContext, "setCountOfRequestHeaderBytesSent", fieldValue);
 }
@@ -124,8 +152,8 @@ void setJavaMetricsRemotePort(CurlContext *curlContext, long long fieldValue){
     setJavaMetricsLongField(curlContext, "setRemotePort", fieldValue);
 }
 
-void setJavaMetricsStartTimestamp(CurlContext *curlContext, long long fieldValue){
-    setJavaMetricsLongField(curlContext, "setStartTimestamp", fieldValue);
+void setJavaMetricsStartTimestamp(CurlContext *curlContext){
+    setJavaMetricsVoidField(curlContext, "setStartTimestamp");
 }
 
 void setJavaMetricsNameLookupTime(CurlContext *curlContext, long long fieldValue){

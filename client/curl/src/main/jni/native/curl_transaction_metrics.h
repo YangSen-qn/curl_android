@@ -26,7 +26,7 @@ void setJavaMetricsRemoteAddress(CurlContext *curlContext, char *fieldValue);
 
 void setJavaMetricsRemotePort(CurlContext *curlContext, long long fieldValue);
 
-void setJavaMetricsStartTimestamp(CurlContext *curlContext, long long fieldValue);
+void setJavaMetricsStartTimestamp(CurlContext *curlContext);
 
 void setJavaMetricsNameLookupTime(CurlContext *curlContext, long long fieldValue);
 

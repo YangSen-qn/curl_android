@@ -1,5 +1,7 @@
 package com.qiniu.client.curl;
 
+import java.util.Date;
+
 class CurlTransactionMetrics {
 
     private long countOfRequestHeaderBytesSent;
@@ -87,64 +89,94 @@ class CurlTransactionMetrics {
         this.remotePort = remotePort;
     }
 
-    long getStartTimestamp() {
-        return startTimestamp;
+    Date getDnsStartDate() {
+        if (startTimestamp < 10000) {
+            return null;
+        }
+        return new Date(startTimestamp);
     }
 
-    void setStartTimestamp(long startTimestamp) {
-        this.startTimestamp = startTimestamp;
+    Date getDnsEndDate() {
+        if (startTimestamp < 10000) {
+            return null;
+        }
+        return new Date(startTimestamp + nameLookupTime);
     }
 
-    long getNameLookupTime() {
-        return nameLookupTime;
+    Date getRequestStartDate() {
+        if (startTimestamp < 10000) {
+            return null;
+        }
+        return new Date(startTimestamp);
     }
 
-    void setNameLookupTime(long nameLookupTime) {
-        this.nameLookupTime = nameLookupTime;
+    Date getRequestEndDate() {
+        if (startTimestamp < 10000) {
+            return null;
+        }
+        return new Date(startTimestamp + totalTime);
     }
 
-    long getConnectTime() {
-        return connectTime;
+    Date getConnectStartDate() {
+        return getDnsEndDate();
+    }
+
+    Date getConnectEndDate() {
+        if (startTimestamp < 10000) {
+            return null;
+        }
+        return new Date(startTimestamp + nameLookupTime + connectTime);
+    }
+
+    Date getSecureConnectionStartDate() {
+        return getConnectEndDate();
+    }
+
+    Date getSecureConnectionEndDate() {
+        if (startTimestamp < 10000) {
+            return null;
+        }
+        return new Date(startTimestamp + nameLookupTime + connectTime + appConnectTime);
+    }
+
+    Date getResponseStartDate() {
+        return getSecureConnectionEndDate();
+    }
+
+    Date getResponseEndDate() {
+        if (startTimestamp < 10000) {
+            return null;
+        }
+        return new Date(startTimestamp + nameLookupTime + connectTime + appConnectTime +
+                preTransferTime + startTransferTime + redirectTime);
+    }
+
+    void setStartTimestamp() {
+        this.startTimestamp = new Date().getTime();
+    }
+
+    void setNameLookupTime(long lookupTime) {
+        this.nameLookupTime = lookupTime;
     }
 
     void setConnectTime(long connectTime) {
         this.connectTime = connectTime;
     }
 
-    public long getAppConnectTime() {
-        return appConnectTime;
-    }
-
-    public void setAppConnectTime(long appConnectTime) {
+    void setAppConnectTime(long appConnectTime) {
         this.appConnectTime = appConnectTime;
-    }
-
-    long getPreTransferTime() {
-        return preTransferTime;
     }
 
     void setPreTransferTime(long preTransferTime) {
         this.preTransferTime = preTransferTime;
     }
 
-    long getStartTransferTime() {
-        return startTransferTime;
-    }
-
     void setStartTransferTime(long startTransferTime) {
         this.startTransferTime = startTransferTime;
     }
 
-    long getTotalTime() {
-        return totalTime;
-    }
-
     void setTotalTime(long totalTime) {
         this.totalTime = totalTime;
-    }
-
-    long getRedirectTime() {
-        return redirectTime;
     }
 
     void setRedirectTime(long redirectTime) {

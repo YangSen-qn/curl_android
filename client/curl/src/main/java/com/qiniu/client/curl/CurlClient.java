@@ -15,6 +15,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Map;
 
 public class CurlClient implements IRequestClient {
@@ -40,12 +41,14 @@ public class CurlClient implements IRequestClient {
         if (host != null && host.equals("upload-z0.qbox.me")) {
             ip = "111.1.36.180";
         }
-
         CurlConfiguration.Builder builder = new CurlConfiguration.Builder();
         if (host != null && ip != null) {
             int port = request.urlString.contains("https://") ? 443 : 80;
             CurlConfiguration.DnsResolver resolver = new CurlConfiguration.DnsResolver(host, ip, port);
             builder.setDnsResolverArray(new CurlConfiguration.DnsResolver[]{resolver});
+
+            metrics.remoteAddress = ip;
+            metrics.remotePort = port;
         }
         if (connectionProxy != null) {
             builder.setProxy("");
@@ -65,12 +68,13 @@ public class CurlClient implements IRequestClient {
         }
 
         int httpVersion = CurlRequest.HttpVersionCurlMatch;
-//        if (curlConfiguration.getDnsResolverArray() != null) {
-//            httpVersion = CurlRequest.HttpVersion3;
-//        }
+        if (curlConfiguration.getDnsResolverArray() != null) {
+            httpVersion = CurlRequest.HttpVersion3;
+        }
 
-        if (request.httpBody != null) {
+        if (request.httpBody != null && request.httpBody.length > 0) {
             requestDataStream = new ByteArrayInputStream(request.httpBody);
+            request.allHeaders.put("Content-Length", request.httpBody.length + "");
         }
         final CurlRequest curlRequest = new CurlRequest(request.urlString, httpVersion, httpMethod,
                 request.allHeaders, request.httpBody, request.timeout);
@@ -102,13 +106,13 @@ public class CurlClient implements IRequestClient {
                 if (response != null) {
                     metrics.httpVersion = response.httpVersion;
                 }
-                Log.i("Curl", "====== Response: url:" + response.getUrl() + " statusCode:" + response.getStatusCode() + " headerInfo:" + response.getAllHeaderFields());
+//                Log.i("Curl", "====== Response: url:" + response.getUrl() + " statusCode:" + response.getStatusCode() + " headerInfo:" + response.getAllHeaderFields());
             }
 
             @Override
             public byte[] sendData(long dataLength) {
                 // 设置了 body 不需要在设置 此回调
-                Log.i("Curl", "====== sendData:");
+//                Log.i("Curl", "====== sendData:");
                 byte[] data = new byte[(int)dataLength];
                 try {
                     int length = requestDataStream.read(data);
@@ -127,7 +131,7 @@ public class CurlClient implements IRequestClient {
                     e.printStackTrace();
                 }
                 String info = new String(data);
-                Log.i("Curl", "====== receiveData:" + info);
+//                Log.i("Curl", "====== receiveData:" + info);
             }
 
             @Override
@@ -160,7 +164,7 @@ public class CurlClient implements IRequestClient {
                 if (complete != null) {
                     complete.complete(responseInfo, metrics, response);
                 }
-                Log.i("Curl", "====== completeWithError errorCode:" + errorCode + " errorInfo:" + errorInfo);
+//                Log.i("Curl", "====== completeWithError errorCode:" + errorCode + " errorInfo:" + errorInfo);
             }
 
             @Override
@@ -168,27 +172,44 @@ public class CurlClient implements IRequestClient {
                 if (progress != null) {
                     progress.progress(totalBytesSent, totalBytesExpectedToSend);
                 }
-                Log.i("Curl", "====== sendProgress bytesSent:" + bytesSent + " totalBytesSent:" + totalBytesSent + " totalBytesExpectedToSend:" + totalBytesExpectedToSend);
+//                Log.i("Curl", "====== sendProgress bytesSent:" + bytesSent + " totalBytesSent:" + totalBytesSent + " totalBytesExpectedToSend:" + totalBytesExpectedToSend);
             }
 
             @Override
             public void receiveProgress(long bytesReceive, long totalBytesReceive, long totalBytesExpectedToReceive) {
-                Log.i("Curl", "====== receiveProgress bytesReceive:" + bytesReceive + " totalBytesReceive:" + totalBytesReceive + " totalBytesExpectedToReceive:" + totalBytesExpectedToReceive);
+//                Log.i("Curl", "====== receiveProgress bytesReceive:" + bytesReceive + " totalBytesReceive:" + totalBytesReceive + " totalBytesExpectedToReceive:" + totalBytesExpectedToReceive);
             }
 
             @Override
             public void didFinishCollectingMetrics(CurlTransactionMetrics transactionMetrics) {
+                metrics.end();
                 metrics.clientName = "Curl";
-                metrics.clientVersion = "";
-                metrics.countOfRequestHeaderBytesSent = transactionMetrics.getCountOfRequestHeaderBytesSent();
-                metrics.countOfRequestBodyBytesSent = transactionMetrics.getCountOfRequestBodyBytesSent();
-                metrics.countOfResponseHeaderBytesReceived = transactionMetrics.getCountOfResponseHeaderBytesReceived();
-                metrics.countOfResponseBodyBytesReceived = transactionMetrics.getCountOfResponseBodyBytesReceived();
-                metrics.remoteAddress = transactionMetrics.getRemoteAddress();
-                metrics.remotePort = (int)transactionMetrics.getRemotePort();
-                metrics.localAddress = transactionMetrics.getLocalAddress();
-                metrics.localPort = (int)transactionMetrics.getLocalPort();
-                Log.i("Curl", "====== didFinishCollectingMetrics metrics:" + metrics);
+                metrics.clientVersion = "0.0.1";
+                if (transactionMetrics != null) {
+                    metrics.countOfRequestHeaderBytesSent = transactionMetrics.getCountOfRequestHeaderBytesSent();
+                    metrics.countOfRequestBodyBytesSent = transactionMetrics.getCountOfRequestBodyBytesSent();
+                    metrics.countOfResponseHeaderBytesReceived = transactionMetrics.getCountOfResponseHeaderBytesReceived();
+                    metrics.countOfResponseBodyBytesReceived = transactionMetrics.getCountOfResponseBodyBytesReceived();
+                    if (transactionMetrics.getRemoteAddress() != null && transactionMetrics.getRemoteAddress().length() > 0) {
+                        metrics.remoteAddress = transactionMetrics.getRemoteAddress();
+                    }
+                    if (transactionMetrics.getRemotePort() > 0) {
+                        metrics.remotePort = (int) transactionMetrics.getRemotePort();
+                    }
+                    metrics.localAddress = transactionMetrics.getLocalAddress();
+                    metrics.localPort = (int) transactionMetrics.getLocalPort();
+                    metrics.requestStartDate = transactionMetrics.getRequestStartDate();
+                    metrics.requestEndDate = transactionMetrics.getRequestEndDate();
+                    metrics.domainLookupStartDate = transactionMetrics.getDnsStartDate();
+                    metrics.domainLookupEndDate = transactionMetrics.getDnsEndDate();
+                    metrics.connectStartDate = transactionMetrics.getConnectStartDate();
+                    metrics.connectEndDate = transactionMetrics.getConnectEndDate();
+                    metrics.secureConnectionStartDate = transactionMetrics.getSecureConnectionStartDate();
+                    metrics.secureConnectionEndDate = transactionMetrics.getSecureConnectionEndDate();
+                    metrics.responseStartDate = transactionMetrics.getResponseStartDate();
+                    metrics.responseEndDate = transactionMetrics.getResponseEndDate();
+                }
+//                Log.d("Curl", "====== didFinishCollectingMetrics metrics:" + metrics);
             }
         });
     }

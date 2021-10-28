@@ -79,10 +79,10 @@ int CurlDebugCallback(CURL *curl, curl_infotype infoType, char *info, size_t inf
 //            fprintf(stderr, "=> Text: %s", info);
             break;
         case CURLINFO_HEADER_IN:
-            kCurlLogD("<= Recv header: %s", info);
+//            kCurlLogD("<= Recv header: %s", info);
             break;
         case CURLINFO_HEADER_OUT:
-            kCurlLogD("==> Send header: %s", info);
+//            kCurlLogD("==> Send header: %s", info);
             break;
         case CURLINFO_DATA_IN:
 //            kCurlLogD("=> Recv data");
@@ -160,10 +160,10 @@ void initCurlRequestDefaultOptions(CURL *curl, struct CurlContext *curlContext, 
     curl_easy_setopt(curl, CURLOPT_ACCEPTTIMEOUT_MS, 5000L);
     curl_easy_setopt(curl, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS, 300L);
 
-//    curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
-//    curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 10L);
-//    curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 10L);
-//    curl_easy_setopt(curl, CURLOPT_TCP_FASTOPEN, 1L);
+    curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
+    curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 10L);
+    curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 10L);
+    curl_easy_setopt(curl, CURLOPT_TCP_FASTOPEN, 1L);
 
   //  curl_easy_setopt(curl, CURLOPT_MAXCONNECTS, 0L);
     //   curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1L);
@@ -230,7 +230,7 @@ void initCurlRequestCustomOptions(CURL *curl, struct CurlContext *curlContext) {
 
 void initCurlDnsResolver(CURL *curl, struct CurlContext *curlContext) {
     if (curlContext != NULL && curlContext->dnsResolverArray != NULL) {
-        kCurlLogD("== Dns resolver:%s", curlContext->dnsResolverArray->data);
+//        kCurlLogD("== Dns resolver:%s", curlContext->dnsResolverArray->data);
         curl_easy_setopt(curl, CURLOPT_RESOLVE, curlContext->dnsResolverArray);
     }
 }
@@ -257,25 +257,37 @@ initCurlRequestMethodAndRequestData(CURL *curl, struct CurlContext *curlContext,
     long long totalBytesExpectedToSend = curlContext->totalBytesExpectedToSend;
     int httpMethod = curlContext->requestMethod;
     if (httpMethod == Curl_Request_Http_Method_HEAD) {
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "HEAD");
+        qn_curl_easy_setopt(curl, CURLOPT_NOBODY, 1, errorCode, errorInfo, "POST Option set error");
     } else if (httpMethod == Curl_Request_Http_Method_GET) {
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
+        qn_curl_easy_setopt(curl, CURLOPT_HTTPGET, 1, errorCode, errorInfo, "POST Option set error");
     } else if (httpMethod == Curl_Request_Http_Method_POST) {
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
-        qn_curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, totalBytesExpectedToSend, errorCode, errorInfo,
-                            "body length set error");
-        qn_curl_easy_setopt(curl, CURLOPT_POSTFIELDS, curlUtilConvertJByteArrayToChars(curlContext->env, curlContext->body), errorCode, errorInfo,
-                            "body set error");
+        qn_curl_easy_setopt(curl, CURLOPT_POST, 1, errorCode, errorInfo, "POST Option set error");
+        if (totalBytesExpectedToSend > 0) {
+            qn_curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, totalBytesExpectedToSend, errorCode, errorInfo,
+                                "body length set error");
+//        qn_curl_easy_setopt(curl, CURLOPT_POSTFIELDS, curlUtilConvertJByteArrayToChars(curlContext->env, curlContext->body), errorCode, errorInfo,
+//                            "body set error");
+            qn_curl_easy_setopt(curl, CURLOPT_READFUNCTION, CurlReadCallback, errorCode, errorInfo,
+                                "read function set 1 error");
+            qn_curl_easy_setopt(curl, CURLOPT_READDATA, curlContext, errorCode, errorInfo,
+                                "read function set 2 error");
+        }
+
     } else if (httpMethod == Curl_Request_Http_Method_PUT) {
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
-        qn_curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, totalBytesExpectedToSend, errorCode, errorInfo,
-                            "body length set error");
-        qn_curl_easy_setopt(curl, CURLOPT_POSTFIELDS, curlUtilConvertJByteArrayToChars(curlContext->env, curlContext->body), errorCode, errorInfo,
-                            "body set error");
-//        qn_curl_easy_setopt(curl, CURLOPT_READFUNCTION, CurlReadCallback, errorCode, errorInfo,
-//                            "read function set 1 error");
-//        qn_curl_easy_setopt(curl, CURLOPT_READDATA, curlContext, errorCode, errorInfo,
-//                            "read function set 2 error");
+        qn_curl_easy_setopt(curl, CURLOPT_UPLOAD, 1, errorCode, errorInfo,
+                         "PUT Option set error");
+        if (totalBytesExpectedToSend > 0) {
+            qn_curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, totalBytesExpectedToSend, errorCode,
+                                errorInfo,
+                                "body length set error");
+            qn_curl_easy_setopt(curl, CURLOPT_READFUNCTION, CurlReadCallback, errorCode, errorInfo,
+                                "read function set 1 error");
+            qn_curl_easy_setopt(curl, CURLOPT_READDATA, curlContext, errorCode, errorInfo,
+                                "read function set 2 error");
+        }
+    } else if (httpMethod == Curl_Request_Http_Method_DELETE) {
+        qn_curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE", errorCode, errorInfo,
+                            "DELETE Option set error");
     } else {
         *errorCode = CURLE_FAILED_INIT;
         *errorInfo = "method set error";
@@ -434,10 +446,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_client_curl_Curl_requestNative(
     setCurlContextWithConfiguration(env, &curlContext, configure);
 
     // start time
-    struct timeval tp;
-    gettimeofday(&tp, NULL);
-    long int timestamp = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-    setJavaMetricsStartTimestamp(&curlContext, timestamp);
+    setJavaMetricsStartTimestamp(&curlContext);
 
     CURL *curl = curl_easy_init();
     if (curl == NULL) {

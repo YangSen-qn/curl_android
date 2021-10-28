@@ -59,10 +59,10 @@ class Curl {
 
         void completeWithError(int code, String errorMsg);
 
-        void sendProgress(long var1, long var3, long var5);
+        void sendProgress(long bytesSent, long totalBytesSent, long totalBytesExpectedToSend);
 
-        void receiveProgress(long var1, long var3, long var5);
+        void receiveProgress(long bytesReceive, long totalBytesReceive, long totalBytesExpectedToReceive);
 
-        void didFinishCollectingMetrics(CurlTransactionMetrics var1);
+        void didFinishCollectingMetrics(CurlTransactionMetrics metrics);
     }
 }
