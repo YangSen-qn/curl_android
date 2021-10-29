@@ -64,7 +64,6 @@ class CurlRequest {
             for (String headerKey : allHeaders.keySet()) {
                 String headerValue = allHeaders.get(headerKey);
                 String header = headerKey + ": " + headerValue;
-                Log.d("== header:", "[" + header + ":" + headerValue + "]");
                 headerList.add(header);
             }
             headerList.add("Expect: null");

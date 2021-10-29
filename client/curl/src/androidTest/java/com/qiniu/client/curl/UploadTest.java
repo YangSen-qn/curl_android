@@ -1,6 +1,7 @@
 package com.qiniu.client.curl;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.util.Log;
 
@@ -44,6 +45,7 @@ public class UploadTest extends BaseTest {
     @Before
     public void setup() {
         LogUtil.setLogLevel(Log.VERBOSE);
+        System.out.println("\n=== test before");
     }
 
     @Test
@@ -218,6 +220,22 @@ public class UploadTest extends BaseTest {
         LogUtil.d("=== key:" + info.key);
         LogUtil.d("=== responseInfo:" + info.responseInfo);
         LogUtil.d("=== response:" + info.response);
+    }
+
+    @Test
+    public void testA() {
+        System.out.println("=== testA:");
+    }
+
+    @Test
+    public void testB() {
+        System.out.println("=== testB:");
+        assertTrue(false);
+    }
+
+    @Test
+    public void testC() {
+        assertEquals(4, 2 + 2);
     }
 
     @After

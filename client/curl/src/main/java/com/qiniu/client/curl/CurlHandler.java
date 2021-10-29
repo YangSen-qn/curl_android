@@ -66,7 +66,6 @@ class CurlHandler {
         if (curlHandler != null){
             curlHandler.sendProgress(bytesSent, totalBytesSent, totalBytesExpectedToSend);
         }
-        Log.d("== Progress", "bytesSent:" + bytesSent + " totalBytesSent:" + totalBytesSent + " totalBytesExpectedToSend:" + totalBytesExpectedToSend);
     }
     void receiveProgress(long bytesReceive, long totalBytesReceive, long totalBytesExpectedToReceive){
         if (curlHandler != null){

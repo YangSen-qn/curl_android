@@ -1,7 +1,5 @@
 package com.qiniu.client.curl;
 
-import android.util.Log;
-
 import com.qiniu.android.http.ProxyConfiguration;
 import com.qiniu.android.http.ResponseInfo;
 import com.qiniu.android.http.metrics.UploadSingleRequestMetrics;
@@ -15,7 +13,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.Map;
 
 public class CurlClient implements IRequestClient {
@@ -130,7 +127,7 @@ public class CurlClient implements IRequestClient {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                String info = new String(data);
+//                String info = new String(data);
 //                Log.i("Curl", "====== receiveData:" + info);
             }
 
@@ -184,7 +181,7 @@ public class CurlClient implements IRequestClient {
             public void didFinishCollectingMetrics(CurlTransactionMetrics transactionMetrics) {
                 metrics.end();
                 metrics.clientName = "Curl";
-                metrics.clientVersion = "0.0.1";
+                metrics.clientVersion = config.version;
                 if (transactionMetrics != null) {
                     metrics.countOfRequestHeaderBytesSent = transactionMetrics.getCountOfRequestHeaderBytesSent();
                     metrics.countOfRequestBodyBytesSent = transactionMetrics.getCountOfRequestBodyBytesSent();
