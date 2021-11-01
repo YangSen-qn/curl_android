@@ -1,5 +1,7 @@
 package com.qiniu.client.curl;
 
+import android.util.Log;
+
 import com.qiniu.android.http.ProxyConfiguration;
 import com.qiniu.android.http.ResponseInfo;
 import com.qiniu.android.http.metrics.UploadSingleRequestMetrics;
@@ -13,6 +15,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Map;
 
 public class CurlClient implements IRequestClient {
@@ -35,9 +38,6 @@ public class CurlClient implements IRequestClient {
 
         String host = server != null ? server.getHost() : null;
         String ip = server != null ? server.getIp() : null;
-        if (host != null && host.equals("upload-z0.qbox.me")) {
-            ip = "111.1.36.180";
-        }
         CurlConfiguration.Builder builder = new CurlConfiguration.Builder();
         if (host != null && ip != null) {
             int port = request.urlString.contains("https://") ? 443 : 80;
@@ -47,9 +47,13 @@ public class CurlClient implements IRequestClient {
             metrics.remoteAddress = ip;
             metrics.remotePort = port;
         }
-        if (connectionProxy != null) {
-            builder.setProxy("");
-            builder.setProxyUserPwd("");
+        if (connectionProxy != null && connectionProxy.hostAddress != null) {
+            String proxy = String.format(Locale.ENGLISH, "%s:%d", connectionProxy.hostAddress, connectionProxy.port);
+            builder.setProxy(proxy);
+            if (connectionProxy.user != null && connectionProxy.password != null) {
+                String userPwd = String.format(Locale.ENGLISH, "%s:%s", connectionProxy.user, connectionProxy.password);
+                builder.setProxyUserPwd(userPwd);
+            }
         }
         final CurlConfiguration curlConfiguration = builder.build();
 
@@ -65,7 +69,7 @@ public class CurlClient implements IRequestClient {
         }
 
         int httpVersion = CurlRequest.HttpVersionCurlMatch;
-        if (curlConfiguration.getDnsResolverArray() != null) {
+        if (server != null && server.isHttp3() && curlConfiguration.getDnsResolverArray() != null) {
             httpVersion = CurlRequest.HttpVersion3;
         }
 
@@ -103,13 +107,13 @@ public class CurlClient implements IRequestClient {
                 if (response != null) {
                     metrics.httpVersion = response.httpVersion;
                 }
-//                Log.i("Curl", "====== Response: url:" + response.getUrl() + " statusCode:" + response.getStatusCode() + " headerInfo:" + response.getAllHeaderFields());
+                Log.d("Curl", "====== Response: url:" + response.getUrl() + " statusCode:" + response.getStatusCode() + " headerInfo:" + response.getAllHeaderFields());
             }
 
             @Override
             public byte[] sendData(long dataLength) {
                 // 设置了 body 不需要在设置 此回调
-//                Log.i("Curl", "====== sendData:");
+                Log.d("Curl", "====== sendData:");
                 byte[] data = new byte[(int)dataLength];
                 try {
                     int length = requestDataStream.read(data);
@@ -127,8 +131,6 @@ public class CurlClient implements IRequestClient {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-//                String info = new String(data);
-//                Log.i("Curl", "====== receiveData:" + info);
             }
 
             @Override
@@ -161,7 +163,7 @@ public class CurlClient implements IRequestClient {
                 if (complete != null) {
                     complete.complete(responseInfo, metrics, response);
                 }
-//                Log.i("Curl", "====== completeWithError errorCode:" + errorCode + " errorInfo:" + errorInfo);
+                Log.d("Curl", "====== completeWithError errorCode:" + errorCode + " errorInfo:" + errorInfo);
             }
 
             @Override
@@ -169,7 +171,7 @@ public class CurlClient implements IRequestClient {
                 if (progress != null) {
                     progress.progress(totalBytesSent, totalBytesExpectedToSend);
                 }
-//                Log.i("Curl", "====== sendProgress bytesSent:" + bytesSent + " totalBytesSent:" + totalBytesSent + " totalBytesExpectedToSend:" + totalBytesExpectedToSend);
+                Log.d("Curl", "====== sendProgress bytesSent:" + bytesSent + " totalBytesSent:" + totalBytesSent + " totalBytesExpectedToSend:" + totalBytesExpectedToSend);
             }
 
             @Override
@@ -206,7 +208,7 @@ public class CurlClient implements IRequestClient {
                     metrics.responseStartDate = transactionMetrics.getResponseStartDate();
                     metrics.responseEndDate = transactionMetrics.getResponseEndDate();
                 }
-//                Log.d("Curl", "====== didFinishCollectingMetrics metrics:" + metrics);
+                Log.d("Curl", "====== didFinishCollectingMetrics metrics:" + metrics);
             }
         });
     }
